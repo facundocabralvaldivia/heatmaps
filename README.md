@@ -13,4 +13,4 @@ Peru Shapefile Source: [GEO GPS PERU](https://www.geogpsperu.com/2014/03/base-de
 ### Heatmaps Included:
 | File                       | Heatmap Type               | Description                                      |
 |----------------------------|----------------------------|--------------------------------------------------|
-| women_entrepreneurs.py     | Income Gap in Peruvian Entrepreneur | Income Gap between male and female entrepreneurs across Peruvian regions (2024). Source: [PRODUCE](https://www.producempresarial.pe/mujer-emprendedora-indicadores-de-desempeno-2024/).|
+| income_gap.py              | Income Gap in Peruvian Entrepreneur | Income Gap between male and female entrepreneurs across Peruvian regions (2024). Source: [PRODUCE](https://www.producempresarial.pe/mujer-emprendedora-indicadores-de-desempeno-2024/).|
