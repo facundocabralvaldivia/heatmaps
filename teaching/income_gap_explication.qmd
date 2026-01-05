@@ -1,0 +1,172 @@
+---
+title: |
+    Generar Mapas Coropléticos en Python\thanks{El proyecto completo en mi perfil de \href{https://github.com/facundocabralvaldivia/heatmaps}{Github}}
+subtitle: |
+    Aplicación de Geopandas en Perú
+author:
+    - name: |
+        Facundo Cabral
+bibliography: referencias.bib
+csl: apa.csl
+format: 
+    pdf:
+        pdf-engine: pdflatex
+        papersize: "a4"
+        documentclass: article
+        classoption: oneside
+        toc: false
+        lang: es-PE
+        fontsize: "11pt"
+        fontfamily: "kpfonts"
+        number-sections: true
+        margin-left: "2.5cm"
+        margin-right: "2.5cm"
+        margin-top:  "2.5cm"
+        margin-bottom: "2.5cm"
+        include-in-header: 
+            text: |
+                \usepackage{lmodern}
+                \usepackage{tikz}
+                \usepackage{amsmath,amssymb}
+                \usepackage{titlesec, titling}
+                \pagenumbering{gobble}
+---
+Los mapas coropléticos (choropleth maps) son un gráfico importante en análisis de datos en temas económicos, políticos, sociales, entre otros. Esta aplicación muestra como realizar un gráfico de este estilo. Haremos una réplica de un gráfico presentado en el trabajo [Mujer Emprendedora: Indicadores de desempeño 2024](https://www.producempresarial.pe/mujer-emprendedora-indicadores-de-desempeno-2024/) producto del trabajo de la Oficina General de Evaluación de Impacto y Estudios Económicos del [Ministerio de la Producción (PRODUCE) del Perú](https://www.linkedin.com/company/minproduccion/posts/?feedView=all).
+
+\vspace{0.75cm}
+
+![Gráfico del informe de PRODUCE](example.png){width=75%}
+
+\newpage
+
+Primero importamos las librerías necesarias para la aplicación.
+```{python}
+#| label: libraries
+#| echo: true
+#| warning: false
+import pandas as pd                     # Manejo de Data Frames
+import geopandas as gpd                 # Manejo de Data Frames espaciales
+import matplotlib.pyplot as plt         # Visualización | Principal
+import matplotlib.colors as mcolors     # Visualización | Complemento
+import matplotlib.patches as mpatches   # Visualización | Complemento
+from shapely.geometry import Point      # Cambio de coordenadas
+```
+
+A continuación leemos el shapefile y hacemos el ploteo. Este es el mapa base.
+```{python}
+#| label: shapefile
+#| echo: true
+#| warning: false
+gdf = gpd.read_file("zip://peru_regions.zip")
+gdf = gdf[['NOMBDEP','geometry']]
+gdf.plot()
+print(type(gdf))
+```
+
+La variable `gdf` no deja de ser un Data Frame, por lo que, para poder hacer una diferenciación entre las regiones, le agregamos variables numéricas y pintamos las áreas según los valores. Para ello, realizaremos la unión con otro data frame.
+```{python}
+#| label: data and merge
+#| echo: true
+#| warning: false
+data = pd.read_csv("income_gap.csv", sep=";")
+gdf  = gdf.merge(data, left_on="NOMBDEP", right_on="NOMBDEP", how="left")
+print(gdf.head(10))
+```
+Antes de realizar el ploteo, debemos generar los parámetros necesarios para el gráfico, como son los intervalos de valores, los colores de sombreado y las etiquetas para la leyenda.
+```{python}
+#| label: parameters
+#| echo: true
+#| warning: false
+bins   = [4.2, 25.7, 28.7, 35.6, 45.2]
+labels = ["[4.2-25.7)", "[25.7-28.7)", "[28.7-35.6)", "[35.6-45.2]"]
+colors = ["#EFF3FF", "#BDD7E7", "#6BAED6", "#2171B5"]
+cmap   = mcolors.ListedColormap(colors)
+norm   = mcolors.BoundaryNorm(bins, cmap.N)
+
+legend_patches = [
+    mpatches.Patch(
+        facecolor=colors[i],
+        label=labels[i],
+        edgecolor="black",
+        linewidth=0.5
+    )
+    for i in range(len(labels))
+]
+legend_patches = legend_patches[::-1]
+```
+A continuación se hace el ploteo base coloreando las regiones según los valores de los intervalos.
+```{python}
+#| label: plot
+#| echo: true
+#| warning: false
+fig, ax = plt.subplots(figsize=(4, 4))
+
+gdf.plot(
+    column    = "IncomeGap",
+    cmap      = cmap,
+    norm      = norm,
+    linewidth = 0.8,
+    edgecolor = "black",
+    ax        = ax
+)
+```
+
+\newpage
+
+Lo que continúa es el mismo ploteo con una serie de arreglos comentados.
+```{python}
+#| label: plot con arreglos
+#| echo: true
+#| warning: false
+
+fig, ax = plt.subplots(figsize=(10, 10))
+gdf.plot(
+    column    = "IncomeGap",
+    cmap      = cmap,
+    norm      = norm,
+    linewidth = 0.8,
+    edgecolor = "black",
+    ax        = ax
+)
+
+ax.set_axis_off() # Quitar los ejes
+
+ax.legend(
+    handles=legend_patches,
+    title="Income Gap (%)",
+    loc="lower left",
+    frameon=False,
+    fontsize=10,
+    title_fontsize=12
+)   # Añadir la leyenda de los intervalos
+
+# Cálculo de los puntos medios de las regiones para las etiquetas
+# Callao se desplaza dado que se sobrepone con la de Lima
+gdf["label_point"] = gdf.geometry.representative_point()
+gdf.loc[gdf["NOMBDEP"] == "CALLAO", "label_point"] = Point(-78, -11.94856)
+
+ax.scatter(     # Graficar los círculos blancos
+    gdf["label_point"].x,
+    gdf["label_point"].y,
+    s=750,
+    facecolor="white",
+    edgecolor="black",
+    linewidth=1,
+    zorder=3
+)
+
+for x, y, val in zip(       # Colocar los valores
+    gdf["label_point"].x,
+    gdf["label_point"].y,
+    gdf["IncomeGap"]
+):
+    ax.text(
+        x, y,
+        f"{val:.1f}",
+        ha="center",
+        va="center",
+        fontsize=10,
+        color="black",
+        zorder=4
+    )
+```

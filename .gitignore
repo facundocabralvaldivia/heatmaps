@@ -1,0 +1,33 @@
+# Excluir archivos específicos de Quarto
+teaching/apa.csl
+teaching/referencias.bib
+teaching/income_gap.csv
+teaching/peru_regions.zip
+teaching/example.png
+
+# Opcional: excluir entorno virtual si no quieres subirlo
+.venv/
+
+# Otros comunes para proyectos Python/Quarto
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git
+.mypy_cache
+.pytest_cache
+.hypothesis
